@@ -21,6 +21,7 @@ function handleCreated(sourceTab)
     {
         for (var tab of tabs) {
             if (! tab.active
+                && tab.id !== sourceTab.id
                 && tab.status === stateComplete
                 && blankTabUrls.includes(tab.url))
             {

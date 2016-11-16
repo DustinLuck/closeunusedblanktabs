@@ -4,6 +4,9 @@ Every time a new tab is created, all blank tabs will be closed (except the activ
 
 Version history
 ---------------
+###0.0.7 (2016-11-16)
+* Suppressed closing new background tabs due to change in the way FF50 handles tab events
+
 ###0.0.6 (2016-10-25)
 * Code optimization
 * Switched trigger to tab creation event due to some new tabs not being caught
