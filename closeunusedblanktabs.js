@@ -14,12 +14,23 @@ Contact the author at http://www.dustinluck.com/contact
 
 const stateComplete = "complete"
 const blankTabUrls = ['about:blank', 'about:home', 'about:newtab', 'about:privatebrowsing'];
+const scannedWindows = {};
 
 function handleCreated(sourceTab)
 {
+    if (scannedWindows[sourceTab.windowId]) {
+        return;
+    }
+
+    // Only scan windows once per second
+    scannedWindows[sourceTab.windowId] = true;
+    setTimeout(() => {
+      delete scannedWindows[sourceTab.windowId];
+    }, 1000);
+
     chrome.tabs.query({windowId: sourceTab.windowId}, function(tabs)
     {
-        for (var tab of tabs) {
+        for (const tab of tabs) {
             if (! tab.active
                 && tab.id !== sourceTab.id
                 && tab.status === stateComplete
