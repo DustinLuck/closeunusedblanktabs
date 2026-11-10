@@ -12,23 +12,87 @@ You should have received a copy of the GNU General Public License along with thi
 Contact the author at http://www.dustinluck.com/contact
 */
 
-const stateComplete = "complete"
-const blankTabUrls = ['about:blank', 'about:home', 'about:newtab', 'about:privatebrowsing'];
+const stateComplete = "complete";
 
-function handleCreated(sourceTab)
+const blankTabUrls = new Set([
+    "about:blank",
+    "about:home",
+    "about:newtab",
+    "about:privatebrowsing"
+]);
+
+const blankTabs = new Map();
+
+function isBlankTab(tab)
 {
-    chrome.tabs.query({windowId: sourceTab.windowId}, function(tabs)
+    return blankTabUrls.has(tab.url);
+}
+
+function trackTab(tab)
+{
+    if (isBlankTab(tab))
     {
-        for (var tab of tabs) {
-            if (! tab.active
-                && tab.id !== sourceTab.id
-                && tab.status === stateComplete
-                && blankTabUrls.includes(tab.url))
+        blankTabs.set(tab.id, tab.windowId);
+    }
+    else
+    {
+        blankTabs.delete(tab.id);
+    }
+}
+
+function handleTabCreated(sourceTab)
+{
+    trackTab(sourceTab);
+
+    for (const [tabId, windowId] of blankTabs)
+    {
+        if (tabId === sourceTab.id || windowId !== sourceTab.windowId)
+        {
+            continue;
+        }
+
+        chrome.tabs.get(tabId, function(tab)
+        {
+            if (chrome.runtime.lastError)
+            {
+                blankTabs.delete(tabId);
+                return;
+            }
+
+            if (!isBlankTab(tab))
+            {
+                blankTabs.delete(tab.id);
+                return;
+            }
+            if (!tab.active &&
+                tab.status === stateComplete)
             {
                 chrome.tabs.remove(tab.id);
             }
-        }
-    });
+        });
+    }
 }
 
-chrome.tabs.onCreated.addListener(handleCreated);
+function handleTabUpdated(tabId, changeInfo, tab)
+{
+    if (changeInfo.url !== undefined)
+    {
+        trackTab(tab);
+    }
+}
+
+function handleTabRemoved(tabId)
+{
+    blankTabs.delete(tabId);
+}
+
+chrome.tabs.onCreated.addListener(handleTabCreated);
+chrome.tabs.onUpdated.addListener(handleTabUpdated);
+chrome.tabs.onRemoved.addListener(handleTabRemoved);
+
+chrome.tabs.query({}, (tabs) =>
+{
+    for (const tab of tabs) {
+        trackTab(tab);
+    }
+});
