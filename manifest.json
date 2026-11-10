@@ -8,5 +8,13 @@
     ],
     "background": {
         "scripts": ["closeunusedblanktabs.js"]
+    },
+
+    "browser_specific_settings": {
+        "gecko": {
+            "data_collection_permissions": {
+                "required": ["none"]
+            }
+        }
     }
 }
