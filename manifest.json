@@ -12,6 +12,7 @@
 
     "browser_specific_settings": {
         "gecko": {
+            "id": "@closeunusedblanktabs",
             "data_collection_permissions": {
                 "required": ["none"]
             }
