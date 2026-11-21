@@ -14,14 +14,33 @@ Report issues via github: https://github.com/DustinLuck/closeunusedblanktabs/iss
 
 const stateComplete = "complete";
 
-const blankTabUrls = new Set([
+const DEFAULT_BLANK_URLS = [
     "about:blank",
     "about:home",
     "about:newtab",
-    "about:privatebrowsing"
-]);
+    "about:privatebrowsing",
+    "chrome://browser/content/blanktab.html"
+];
 
+let blankTabUrls = new Set(DEFAULT_BLANK_URLS);
 const blankTabs = new Map();
+
+function init()
+{
+    chrome.storage.sync.get({ "blankTabUrls": DEFAULT_BLANK_URLS }, (data) =>
+    {
+        blankTabUrls = new Set(data.blankTabUrls);
+        blankTabs.clear();
+
+        chrome.tabs.query({}, (tabs) =>
+        {
+            for (const tab of tabs)
+            {
+                trackTab(tab);
+            }
+        });
+    });
+}
 
 function isBlankTab(tab)
 {
@@ -38,6 +57,35 @@ function trackTab(tab)
     {
         blankTabs.delete(tab.id);
     }
+}
+
+function handleExtensionInstalled(details)
+{
+    if (details.reason !== "install")
+    {
+        return;
+    }
+
+    chrome.storage.sync.get("blankTabUrls", (data) =>
+    {
+        if (chrome.runtime.lastError)
+        {
+            console.error(`Unable to load blank tab URLs: ${chrome.runtime.lastError.message}`);
+            return;
+        }
+        if (Object.prototype.hasOwnProperty.call(data, "blankTabUrls"))
+        {
+            return;
+        }
+
+        chrome.storage.sync.set({ blankTabUrls: DEFAULT_BLANK_URLS }, () =>
+        {
+            if (chrome.runtime.lastError)
+            {
+                console.error(`Unable to initialize blank tab URLs: ${chrome.runtime.lastError.message}`);
+            }
+        });
+    });
 }
 
 function handleTabCreated(sourceTab)
@@ -86,13 +134,43 @@ function handleTabRemoved(tabId)
     blankTabs.delete(tabId);
 }
 
+function handleStorageChanged(changes)
+{
+    if (changes.blankTabUrls)
+    {
+        init();
+    }
+}
+
+function handleRestoreBlankTabUrls(sendResponse)
+{
+    chrome.storage.sync.set({ blankTabUrls: DEFAULT_BLANK_URLS }, () =>
+    {
+        if (chrome.runtime.lastError)
+        {
+            sendResponse({ error: chrome.runtime.lastError.message });
+            return;
+        }
+
+        sendResponse({ blankTabUrls: DEFAULT_BLANK_URLS });
+    });
+
+    return true;
+}
+
+function handleMessage(message, sender, sendResponse)
+{
+    switch (message?.action)
+    {
+        case "restoreBlankTabUrls":
+            return handleRestoreBlankTabUrls(sendResponse);
+    }
+}
+
+chrome.runtime.onMessage.addListener(handleMessage);
 chrome.tabs.onCreated.addListener(handleTabCreated);
 chrome.tabs.onUpdated.addListener(handleTabUpdated);
 chrome.tabs.onRemoved.addListener(handleTabRemoved);
-
-chrome.tabs.query({}, (tabs) =>
-{
-    for (const tab of tabs) {
-        trackTab(tab);
-    }
-});
+chrome.storage.sync.onChanged.addListener(handleStorageChanged);
+chrome.runtime.onInstalled.addListener(handleExtensionInstalled);
+init();

@@ -4,8 +4,13 @@
     "version": "0.0.9",
     "description": "Closes unused blank tabs",
     "permissions": [
-        "tabs"
+        "tabs",
+        "storage"
     ],
+    "options_ui": {
+        "page": "options.html",
+        "open_in_tab": false
+    },
     "background": {
         "scripts": ["closeunusedblanktabs.js"]
     },
