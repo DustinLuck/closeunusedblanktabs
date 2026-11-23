@@ -1,6 +1,8 @@
 Close Unused Blank Tabs
 =======================
-Every time a new tab is created, all blank tabs will be closed (except the active tab)
+Each time you open a new tab, this extension will close any blank tab you opened and forgot about (except the active one). Don't let those unused blank tabs sit around doing nothing.
+
+I built this extension because I start my browser with a blank tab and launching a bookmark set to open in a new tab would always leave that initial blank tab to clean up. You may find it useful in other cases too!
 
 Version history
 ---------------
